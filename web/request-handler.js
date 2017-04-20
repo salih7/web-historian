@@ -53,9 +53,16 @@ exports.handleRequest = function (req, res) {
     }
 
   } else if (req.method === 'POST') {
-    fs.appendFile(archive.paths.list, req.url.slice(1) + '\n'); 
-    res.writeHead(302, 'Done');
-    res.end(); 
+    var body = '';
+    req.on('data', function(chunk) {
+      body += chunk;
+    });
+    req.on('end', function() {
+      data = body.split('=')[1] + '\n';
+      fs.appendFile(archive.paths.list, data); 
+      res.writeHead(302, 'Done');
+      res.end(); 
+    });
   }
   
       //res.end(archive.paths.list);

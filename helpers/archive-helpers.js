@@ -1,6 +1,7 @@
 var fs = require('fs');
 var path = require('path');
 var _ = require('underscore');
+var http = require('http');
 
 /*
  * You will need to reuse the same paths many times over in the course of this sprint.
@@ -26,16 +27,55 @@ exports.initialize = function(pathsObj) {
 // modularize your code. Keep it clean!
 
 exports.readListOfUrls = function(callback) {
+  // TODO
+  fs.readFile(exports.paths.list, 'utf8', function(err, data) {
+    if (err) { throw err; }
+    var urls = data.split('\n');
+    callback(urls);
+  });
 };
 
 exports.isUrlInList = function(url, callback) {
+  exports.readListOfUrls(function(urls) {
+    var isUrlThere = _.contains(urls, url);
+    callback(isUrlThere);
+  });
 };
 
 exports.addUrlToList = function(url, callback) {
+  exports.isUrlInList(url, function(inList) {
+    if (!inList) {
+      fs.appendFile(exports.paths.list, url);
+      callback(); 
+    }
+  });
 };
 
 exports.isUrlArchived = function(url, callback) {
+  fs.readdir(exports.paths.archivedSites, (err, files) => {
+    if (err) { throw err; }
+    var isFileArchived = _.contains(files, url);
+    callback(isFileArchived); 
+  });
 };
 
 exports.downloadUrls = function(urls) {
+  urls.forEach(url => { 
+    http.get({
+      host: url,
+      path: '/'
+    }, function(response) {
+      var body = '';
+      response.on('data', function(chunk) {
+        body += chunk;
+      });
+      response.on('end', function() {
+        var fixturePath = exports.paths.archivedSites + '/' + url;
+        var fd = fs.openSync(fixturePath, 'w');
+        fs.write(fd, body, function() {
+          fs.close(fd);
+        });
+      });
+    });
+  });
 };
