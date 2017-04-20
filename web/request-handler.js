@@ -28,28 +28,15 @@ exports.handleRequest = function (req, res) {
         res.end(html);
       });    
     } else {
-      fs.readFile(archive.paths.list, 'utf8', function(err, data) {
-        if (err) { throw err; }
-        fs.readdir(archive.paths.archivedSites, (err, files) => {
-          if (files.some(file => file === req.url.slice(1))) {
-            var path2 = archive.paths.archivedSites + req.url;
-            fs.readFile(path2, 'utf8', function(err, html) {
-              if (err) { throw err; }
-              res.writeHead(200, headers);
-              res.end(html);
-            });    
-          } else {
-            res.writeHead(404, 'Not Found!');
-            res.end();
-          }
-        });
-        // if(data.indexOf(req.url.slice(1)) >= 0) {
-        //   // TODO
-        // } else {
-        //   res.writeHead(404, 'Not Found!');
-        //   res.end();
+      if (true) { //----TODO ISURLINLIST
+        // if () { //----TODO ISURLARCHIVED
         // }
-      });   
+        res.writeHead(200,  'Done');
+        res.end();       
+      } else {
+        res.writeHead(404, 'Not Found!');
+        res.end();
+      } 
     }
 
   } else if (req.method === 'POST') {
@@ -59,11 +46,10 @@ exports.handleRequest = function (req, res) {
     });
     req.on('end', function() {
       data = body.split('=')[1] + '\n';
-      fs.appendFile(archive.paths.list, data); 
+      //-----TODO ADDURLSTOLIST
       res.writeHead(302, 'Done');
       res.end(); 
     });
   }
   
-      //res.end(archive.paths.list);
 };
