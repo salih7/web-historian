@@ -29,33 +29,39 @@ exports.initialize = function(pathsObj) {
 
 exports.readListOfUrls = function(callback) {
   fs.readFile(exports.paths.list, 'utf8', function(err, data) {
-    if (err) { throw err; }
+    if (err) { return callback(err, null); }
     var urls = data.split('\n');
-    callback(urls);
+    callback(null, urls);
   });
 };
 
 exports.isUrlInList = function(url, callback) {
-  exports.readListOfUrls(function(urls) {
+  exports.readListOfUrls(function(err, urls) {
+    if (err) { return callback(err, null); }
     var isUrlThere = _.contains(urls, url.split('\n')[0]);
-    callback(isUrlThere);
+    callback(null, isUrlThere);
   });
 };
 
 exports.addUrlToList = function(url, callback) {
-  exports.isUrlInList(url, function(inList) {
+  exports.isUrlInList(url, function(err, inList) {
+    if (err) { return callback(err, null); }    
     if (!inList) {
       fs.appendFile(exports.paths.list, url);
     }
-    callback(); 
+    callback(null); 
   });
 };
 
 exports.isUrlArchived = function(url, callback) {
   fs.readdir(exports.paths.archivedSites, (err, files) => {
-    if (err) { throw err; }
+    if (err) { return callback(err, null); }
     var isFileArchived = _.contains(files, url);
-    callback(isFileArchived); 
+    if (isFileArchived) {
+      callback(null, url);  
+    } else {
+      callback(null, null);
+    }
   });
 };
 
@@ -71,30 +77,3 @@ exports.downloadUrls = function(urls) {
     });
   });
 };
-  
-// Create or clear the file.
-// var fd = fs.openSync(fixturePath, 'w');
-// fs.writeSync(fd, 'google');
-// fs.closeSync(fd);
-
-// // Write data to the file.
-// fs.writeFileSync(fixturePath, body);
-// console.log('error:', error); // Print the error if one occurred 
-// console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received 
-// console.log('body:', body); // Print the HTML for the Google homepage. 
-//   https.get({
-//     host: url
-//    // path: ''
-//   }, function(response) {
-//     var body = '';
-//     response.on('data', function(chunk) {
-//       body += chunk;
-//     });
-//     response.on('end', function() {
-//       var fixturePath = exports.paths.archivedSites + '/' + url;
-//       var fd = fs.openSync(fixturePath, 'w');
-//       fs.write(fd, body, function() {
-//         fs.close(fd);
-//       });
-//     });
-//   });

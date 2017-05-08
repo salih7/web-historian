@@ -2,7 +2,13 @@ var path = require('path');
 var archive = require('../helpers/archive-helpers');
 var fs = require('fs');
 var querystring = require('querystring');
+var Promise = require('bluebird');
 // require more modules/folders here!
+
+var addUrlToListAsync = Promise.promisify(archive.addUrlToList);
+var isUrlArchivedAsync = Promise.promisify(archive.isUrlArchived);
+
+Promise.promisifyAll(fs);
 
 var headers = {
   'access-control-allow-origin': '*',
@@ -15,10 +21,13 @@ exports.handleRequest = function (req, res) {
   if (req.method === 'GET') {
     var file = archive.paths.siteAssets + '/index.html'; 
     res.writeHead(200, headers);
-    fs.readFile(file, 'utf8', function(err, html) {
-      if (err) { throw err; }
-      res.end(html);
-    });     
+    fs.readFileAsync(file, 'utf8')
+      .then(function(html) {
+        res.end(html);
+      })
+      .catch(function(err) {
+        console.log('Error occured reading file');
+      });     
   } else if (req.method === 'POST') {
     var body = '';
     req.on('data', function(chunk) {
@@ -26,29 +35,41 @@ exports.handleRequest = function (req, res) {
     });
     req.on('end', function() {
       data = body.split('=')[1] + '\n';
-      archive.addUrlToList(data, function () {
-        res.writeHead(302, 'Done');
-        var url = data.split('\n')[0];
-        archive.isUrlArchived(url, function (isArchived) {
-          if (isArchived) {
-            console.log('Archived', url);
+      addUrlToListAsync(data)
+        .then(function() {
+          res.writeHead(302, 'Done');
+          var url = data.split('\n')[0];
+          return url;
+        })
+        .then(function(url) {
+          return isUrlArchivedAsync(url);
+        })
+        .then(function(archivedUrl) {
+          if (archivedUrl) {
+            console.log('Archived', archivedUrl);
             res.writeHead(200, 'Done');
-            fs.readFile(`${archive.paths.archivedSites}/${url}`, 'utf8', function(err, html) {
-              if (err) { throw err; }
-              res.end(html);
-            });  
+            fs.readFileAsync(`${archive.paths.archivedSites}/${archivedUrl}`, 'utf8')
+              .then(function(html) {
+                res.end(html);
+              })
+              .catch(function(err) {
+                console.log('Error occured reading file');
+              });
           } else {
-            console.log('404', url);
+            console.log('404', archivedUrl);
             res.writeHead(404, 'Not Found!');
-            fs.readFile(`${archive.paths.siteAssets}/loading.html`, 'utf8', function(err, html) {
-              if (err) { throw err; }
-              res.end(html);
-            });
+            fs.readFileAsync(`${archive.paths.siteAssets}/loading.html`, 'utf8')
+              .then(function(html) {
+                res.end(html);
+              })
+              .catch(function(err) {
+                console.log('Error occured reading file');
+              });
           }
-        }); 
-      });
-      //-----TODO ADDURLSTOLIST
-    });
+        })
+        .catch(function(err) {
+          console.log('Some error occured along the promise chain', err);
+        });
+    });    
   }
-  
 };
