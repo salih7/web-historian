@@ -3,6 +3,7 @@
 var fs = require('fs');
 var archive = require('../helpers/archive-helpers');
 var Promise = require('bluebird');
+var CronJob = require('cron').CronJob;
 
 var readListOfUrlsAsync = Promise.promisify(archive.readListOfUrls);
 
@@ -16,4 +17,12 @@ exports.htmlFetcher = function() {
     });
 };
 
-exports.htmlFetcher();
+var job = new CronJob({         //--With NPM 'cron' it runs every minute at 00 seconds
+  cronTime: '00 * * * * *', 
+  onTick: function() {
+    exports.htmlFetcher();  
+  },
+  start: true
+});
+
+job.start();
